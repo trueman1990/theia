@@ -14,10 +14,13 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { EditorWidget } from '@theia/editor/lib/browser/editor-widget';
+import { NativeTextInputFocusContext } from '@theia/core/lib/browser/keybinding';
 import { StrictEditorTextFocusContext } from '@theia/editor/lib/browser/editor-keybinding-contexts';
 import { MonacoEditor } from './monaco-editor';
+import { MonacoEditorProvider } from './monaco-editor-provider';
+import { EditorWidgetFactory } from '@theia/editor/lib/browser/editor-widget-factory';
 
 /**
  * Besides checking whether this editor is the currently active one and has the focus, it also checks the followings:
@@ -38,6 +41,35 @@ export class MonacoStrictEditorTextFocusContext extends StrictEditorTextFocusCon
             return editor.isFocused({ strict: true });
         }
         return super.canHandle(widget);
+    }
+
+}
+
+/**
+ * The Monaco editor itself is a `textArea` so we have to restrict the default native text input focus context.
+ * It is enabled if the focus is on an `input` or `textArea` and not contained in a Monaco editor.
+ */
+@injectable()
+export class MonacoNativeTextInputFocusContext extends NativeTextInputFocusContext {
+
+    @inject(MonacoEditorProvider)
+    protected readonly editorProvider: MonacoEditorProvider;
+
+    isEnabled(): boolean {
+        return super.isEnabled() && !this.activeElementIsInEditor();
+    }
+
+    protected activeElementIsInEditor(): boolean {
+        const { activeElement } = document;
+        let parent = activeElement ? activeElement.parentElement : undefined;
+        while (parent) {
+            const { id } = parent;
+            if (id && id.startsWith(EditorWidgetFactory.ID)) {
+                return true;
+            }
+            parent = parent.parentElement;
+        }
+        return false;
     }
 
 }

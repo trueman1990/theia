@@ -91,6 +91,30 @@ export namespace KeybindingContexts {
         id: 'default.keybinding.context',
         isEnabled: () => false
     };
+
+}
+
+/**
+ * Keybinding context that is enabled when the focused HTML element is an `input` or a `textArea`.
+ */
+@injectable()
+export class NativeTextInputFocusContext implements KeybindingContext {
+
+    static readonly ID = 'nativeTextInputFocus';
+    readonly id = NativeTextInputFocusContext.ID;
+
+    isEnabled(): boolean {
+        return NativeTextInputFocusContext.is();
+    }
+
+    /**
+     * `true` if the argument is an `input` or a `textArea`. Otherwise, `false`.
+     * The `element` argument defaults to the "focused" DOM element (`document.activeElement`).
+     */
+    static is(element: Element | null = document.activeElement): element is HTMLInputElement | HTMLTextAreaElement {
+        return !!element && ['input', 'textarea'].indexOf(element.tagName.toLocaleLowerCase()) !== -1;
+    }
+
 }
 
 @injectable()
